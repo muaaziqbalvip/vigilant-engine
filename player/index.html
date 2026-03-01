@@ -1,0 +1,223 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>MiTV Network - Live Player</title>
+    <script src="https://cdn.jsdelivr.net/npm/hls.js@latest"></script>
+    <style>
+        body {
+            margin: 0;
+            padding: 0;
+            background-color: #000;
+            color: #fff;
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            min-height: 100vh;
+        }
+        
+        .header {
+            width: 100%;
+            background: linear-gradient(to right, #1a1a1a, #333);
+            padding: 15px 20px;
+            box-sizing: border-box;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            border-bottom: 2px solid #e63946;
+        }
+        
+        .logo-container h1 {
+            margin: 0;
+            font-size: 1.5rem;
+            color: #fff;
+            display: flex;
+            align-items: center;
+        }
+        
+        .live-badge {
+            background-color: #e63946;
+            color: white;
+            padding: 3px 8px;
+            border-radius: 4px;
+            font-size: 0.8rem;
+            font-weight: bold;
+            margin-left: 10px;
+            animation: blink 2s infinite;
+        }
+        
+        @keyframes blink {
+            0% { opacity: 1; }
+            50% { opacity: 0.5; }
+            100% { opacity: 1; }
+        }
+        
+        .video-container {
+            width: 100%;
+            max-width: 1000px;
+            margin: 20px auto;
+            position: relative;
+            box-shadow: 0 10px 30px rgba(0,0,0,0.8);
+            border-radius: 8px;
+            overflow: hidden;
+            background-color: #111;
+        }
+        
+        video {
+            width: 100%;
+            height: auto;
+            aspect-ratio: 16/9;
+            display: block;
+        }
+        
+        .controls {
+            padding: 15px;
+            text-align: center;
+            background-color: #1a1a1a;
+            width: 100%;
+            box-sizing: border-box;
+        }
+        
+        .error-overlay {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(0,0,0,0.8);
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+            align-items: center;
+            display: none;
+            z-index: 10;
+        }
+        
+        .btn-reload {
+            margin-top: 15px;
+            padding: 10px 20px;
+            background-color: #4361ee;
+            color: white;
+            border: none;
+            border-radius: 4px;
+            cursor: pointer;
+            font-weight: bold;
+        }
+        
+        .btn-reload:hover {
+            background-color: #3f37c9;
+        }
+        
+        .footer {
+            margin-top: auto;
+            padding: 20px;
+            text-align: center;
+            font-size: 0.9rem;
+            color: #888;
+        }
+    </style>
+</head>
+<body>
+
+    <header class="header">
+        <div class="logo-container">
+            <h1>MiTV Network <span class="live-badge">LIVE</span></h1>
+        </div>
+        <div>
+            <span id="status-text">Initializing Engine...</span>
+        </div>
+    </header>
+
+    <div class="video-container">
+        <video id="video" controls autoplay muted playsinline></video>
+        
+        <div class="error-overlay" id="error-overlay">
+            <h2>Stream Offline or Loading...</h2>
+            <p>Waiting for GitHub Actions to process the next segment.</p>
+            <button class="btn-reload" onclick="initPlayer()">Retry Connection</button>
+        </div>
+    </div>
+
+    <div class="controls">
+        <p>Aapka Cloud-Based Live Broadcast System by GitHub & Firebase</p>
+    </div>
+
+    <footer class="footer">
+        &copy; 2026 ICS Broadcast Technologies
+    </footer>
+
+    <script>
+        // Note: Change 'YOUR_USERNAME' and 'YOUR_REPO' to your actual GitHub details
+        const streamURL = 'https://YOUR_USERNAME.github.io/YOUR_REPO/index.m3u8';
+        const video = document.getElementById('video');
+        const errorOverlay = document.getElementById('error-overlay');
+        const statusText = document.getElementById('status-text');
+
+        function initPlayer() {
+            errorOverlay.style.display = 'none';
+            statusText.textContent = 'Connecting...';
+            
+            if (Hls.isSupported()) {
+                const hls = new Hls({
+                    debug: false,
+                    manifestLoadingTimeOut: 10000,
+                    manifestLoadingMaxRetry: 3,
+                });
+                
+                hls.loadSource(streamURL);
+                hls.attachMedia(video);
+                
+                hls.on(Hls.Events.MANIFEST_PARSED, function() {
+                    statusText.textContent = 'Connected HQ';
+                    video.play().catch(e => console.log("Auto-play prevented by browser."));
+                });
+                
+                hls.on(Hls.Events.ERROR, function(event, data) {
+                    if (data.fatal) {
+                        switch (data.type) {
+                            case Hls.ErrorTypes.NETWORK_ERROR:
+                                console.error("Fatal network error encountered, try to recover");
+                                statusText.textContent = 'Network Error - Retrying';
+                                hls.startLoad();
+                                break;
+                            case Hls.ErrorTypes.MEDIA_ERROR:
+                                console.error("Fatal media error encountered, try to recover");
+                                hls.recoverMediaError();
+                                break;
+                            default:
+                                hls.destroy();
+                                errorOverlay.style.display = 'flex';
+                                statusText.textContent = 'Stream Offline';
+                                break;
+                        }
+                    }
+                });
+            }
+            // For Safari
+            else if (video.canPlayType('application/vnd.apple.mpegurl')) {
+                video.src = streamURL;
+                video.addEventListener('loadedmetadata', function() {
+                    video.play();
+                    statusText.textContent = 'Connected (Native)';
+                });
+                video.addEventListener('error', function() {
+                    errorOverlay.style.display = 'flex';
+                    statusText.textContent = 'Stream Offline';
+                });
+            }
+        }
+
+        // Initialize on page load
+        document.addEventListener('DOMContentLoaded', initPlayer);
+        
+        // Auto-refresh the page every 10 minutes just to ensure memory cache is cleared (Optional)
+        setTimeout(() => {
+            window.location.reload();
+        }, 600000);
+    </script>
+</body>
+  </html>
+  
