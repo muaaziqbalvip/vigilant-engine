@@ -1,0 +1,68 @@
+name: MiTV Advanced Cloud Engine
+
+on:
+  schedule:
+    - cron: '*/5 * * * *'
+  workflow_dispatch:
+
+jobs:
+  broadcast:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+      
+    steps:
+      - name: Checkout Codebase
+        uses: actions/checkout@v4
+        
+      - name: Setup Python Runtime
+        uses: actions/setup-python@v4
+        with:
+          python-version: '3.10'
+          
+      - name: Install Python Dependencies
+        run: pip install requests
+        
+      - name: Build Assets via Firebase
+        # This executes the python script we wrote above
+        run: python scripts/build_assets.py
+        
+      - name: Check if System is Live
+        id: check_live
+        # If assets weren't downloaded (offline mode), we can stop here or stream a holding screen.
+        run: |
+          if [ ! -f "assets/video.mp4" ]; then
+            echo "Video missing. Stopping workflow gracefully."
+            exit 0
+          fi
+          
+      - name: Install FFmpeg
+        run: sudo apt install -y ffmpeg
+        
+      - name: Create Stream Directory
+        run: mkdir -p live
+        
+      - name: Execute Core Broadcast Engine (FFmpeg)
+        # Uses local downloaded files: assets/video.mp4, assets/font.ttf etc.
+        run: |
+          # Command execution
+          timeout 280s ffmpeg -re -stream_loop -1 -i assets/video.mp4 -stream_loop -1 -i assets/audio.mp3 \
+          -i assets/logo.png \
+          -filter_complex \
+          "[0:v]scale=1280:720[bg]; \
+           [bg][2:v]overlay=main_w-overlay_w-20:20[with_logo]; \
+           [with_logo]drawtext=fontfile='assets/font.ttf':textfile='scripts/overlay.txt':reload=1:x=20:y=20:fontsize=28:fontcolor=white:box=1:boxcolor=black@0.6[v1]; \
+           [v1]drawtext=fontfile='assets/font.ttf':textfile='scripts/ticker.txt':reload=1:x=w-mod(t*150\,w+(tw*2)):y=h-50:fontsize=32:fontcolor=yellow:box=1:boxcolor=black@0.8[v2]" \
+          -map "[v2]" -map 1:a \
+          -c:v libx264 -preset ultrafast -tune zerolatency -b:v 1500k -g 60 -sc_threshold 0 \
+          -c:a aac -b:a 128k \
+          -f hls -hls_time 6 -hls_list_size 6 -hls_flags delete_segments+append_list \
+          -hls_segment_filename "live/seg_%03d.ts" live/index.m3u8 || true
+          
+      - name: Deploy to Cloud Player (GitHub Pages)
+        uses: JamesIves/github-pages-deploy-action@v4
+        with:
+          folder: live
+          branch: gh-pages
+          clean: false
+          
