@@ -1,0 +1,215 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta http-equiv="X-UA-Compatible" content="ie=edge">
+    <title>MiTV Network - Advanced Cloud Broadcast Studio</title>
+    
+    <link rel="stylesheet" href="style.css">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
+</head>
+<body>
+    <div class="app-layout">
+        <aside class="sidebar" id="sidebar">
+            <div class="sidebar-brand">
+                <div class="brand-icon">
+                    <i class="fas fa-broadcast-tower pulse-animation"></i>
+                </div>
+                <h2>MiTV Studio</h2>
+            </div>
+            
+            <nav class="sidebar-nav">
+                <ul class="nav-list">
+                    <li class="nav-item active">
+                        <a href="#dashboard" class="nav-link">
+                            <i class="fas fa-home"></i>
+                            <span>Dashboard</span>
+                        </a>
+                    </li>
+                    <li class="nav-item">
+                        <a href="#media-assets" class="nav-link">
+                            <i class="fas fa-photo-video"></i>
+                            <span>Media Assets</span>
+                        </a>
+                    </li>
+                    <li class="nav-item">
+                        <a href="#typography" class="nav-link">
+                            <i class="fas fa-font"></i>
+                            <span>Typography & Emojis</span>
+                        </a>
+                    </li>
+                    <li class="nav-item">
+                        <a href="#ticker-config" class="nav-link">
+                            <i class="fas fa-comment-dots"></i>
+                            <span>Live Ticker</span>
+                        </a>
+                    </li>
+                    <li class="nav-item">
+                        <a href="#system-health" class="nav-link">
+                            <i class="fas fa-heartbeat"></i>
+                            <span>System Health</span>
+                        </a>
+                    </li>
+                </ul>
+            </nav>
+            
+            <div class="sidebar-footer">
+                <div class="server-status">
+                    <span class="status-indicator online" id="db-status-dot"></span>
+                    <span id="db-status-text">Firebase Connected</span>
+                </div>
+                <p class="copyright">&copy; 2026 ICS Master Project</p>
+            </div>
+        </aside>
+
+        <main class="workspace">
+            <header class="workspace-header">
+                <div class="header-title">
+                    <h1>Live Stream Controller</h1>
+                    <p>Manage remote assets, videos, and dynamic overlays</p>
+                </div>
+                <div class="header-actions">
+                    <button class="btn btn-outline" id="btn-force-sync" title="Force Sync Data">
+                        <i class="fas fa-sync-alt"></i> Sync
+                    </button>
+                    <div class="master-switch-container">
+                        <span class="switch-label">Master Broadcast</span>
+                        <label class="toggle-switch">
+                            <input type="checkbox" id="masterStreamToggle">
+                            <span class="slider"></span>
+                        </label>
+                    </div>
+                </div>
+            </header>
+
+            <div id="alert-container" class="alert-container"></div>
+
+            <div class="content-grid">
+                
+                <div class="card" id="media-assets">
+                    <div class="card-header">
+                        <div class="header-icon primary"><i class="fas fa-film"></i></div>
+                        <h2>Remote Media Assets</h2>
+                    </div>
+                    <div class="card-body">
+                        <p class="helper-text">Provide direct raw links (e.g., from Firebase Storage or direct CDN) for your media. The backend script will download these automatically.</p>
+                        
+                        <form id="form-media">
+                            <div class="input-group">
+                                <label for="videoUrl">Background Video URL (.mp4)</label>
+                                <div class="input-wrapper">
+                                    <i class="fas fa-video input-icon"></i>
+                                    <input type="url" id="videoUrl" placeholder="https://firebasestorage.googleapis.com/.../video.mp4" required>
+                                </div>
+                            </div>
+                            
+                            <div class="input-group">
+                                <label for="audioUrl">Background Audio URL (.mp3 / .aac)</label>
+                                <div class="input-wrapper">
+                                    <i class="fas fa-music input-icon"></i>
+                                    <input type="url" id="audioUrl" placeholder="https://example.com/audio.mp3">
+                                </div>
+                            </div>
+
+                            <div class="input-group">
+                                <label for="logoUrl">Channel Logo URL (.png transparent)</label>
+                                <div class="input-wrapper">
+                                    <i class="fas fa-image input-icon"></i>
+                                    <input type="url" id="logoUrl" placeholder="https://example.com/logo.png">
+                                </div>
+                            </div>
+                            
+                            <div class="form-actions">
+                                <button type="submit" class="btn btn-primary" id="btn-save-media">
+                                    <i class="fas fa-cloud-upload-alt"></i> Save Media Links
+                                </button>
+                            </div>
+                        </form>
+                    </div>
+                </div>
+
+                <div class="card" id="typography">
+                    <div class="card-header">
+                        <div class="header-icon secondary"><i class="fas fa-language"></i></div>
+                        <h2>Typography & Live Ticker</h2>
+                    </div>
+                    <div class="card-body">
+                        <form id="form-typography">
+                            <div class="input-group">
+                                <label for="fontUrl">Custom Font URL (.ttf)</label>
+                                <span class="badge warning">Important for Emojis 🔥</span>
+                                <p class="helper-text small">To display emojis correctly, provide a URL to an emoji-supported font like NotoColorEmoji.ttf.</p>
+                                <div class="input-wrapper">
+                                    <i class="fas fa-font input-icon"></i>
+                                    <input type="url" id="fontUrl" placeholder="https://example.com/NotoEmoji.ttf" required>
+                                </div>
+                            </div>
+                            
+                            <div class="divider"></div>
+                            
+                            <div class="input-group">
+                                <label for="tickerText">Scrolling Ticker Text (Supports Emojis 🚀✨)</label>
+                                <textarea id="tickerText" rows="5" placeholder="Welcome to MiTV Network! 📺 Subscribe for more updates 🔔..."></textarea>
+                                <div class="character-count">UTF-8 Encoding Supported</div>
+                            </div>
+
+                            <div class="input-group">
+                                <label for="weatherCity">Weather Location (API)</label>
+                                <div class="input-wrapper">
+                                    <i class="fas fa-cloud-sun input-icon"></i>
+                                    <input type="text" id="weatherCity" placeholder="Kasur, PK">
+                                </div>
+                            </div>
+
+                            <div class="form-actions">
+                                <button type="submit" class="btn btn-secondary" id="btn-save-text">
+                                    <i class="fas fa-save"></i> Update Typography & Text
+                                </button>
+                            </div>
+                        </form>
+                    </div>
+                </div>
+                
+                <div class="card full-width" id="system-health">
+                    <div class="card-header">
+                        <div class="header-icon dark"><i class="fas fa-terminal"></i></div>
+                        <h2>System Diagnostics</h2>
+                    </div>
+                    <div class="card-body">
+                        <div class="diagnostics-grid">
+                            <div class="diag-box">
+                                <h4>Video Asset</h4>
+                                <span id="diag-video" class="status-badge pending">Checking...</span>
+                            </div>
+                            <div class="diag-box">
+                                <h4>Audio Asset</h4>
+                                <span id="diag-audio" class="status-badge pending">Checking...</span>
+                            </div>
+                            <div class="diag-box">
+                                <h4>Font Asset</h4>
+                                <span id="diag-font" class="status-badge pending">Checking...</span>
+                            </div>
+                            <div class="diag-box">
+                                <h4>Broadcast State</h4>
+                                <span id="diag-state" class="status-badge pending">Checking...</span>
+                            </div>
+                        </div>
+                        <div class="log-console" id="log-console">
+                            <div class="log-entry system">[System] ICS Broadcast Console Initialized.</div>
+                            <div class="log-entry info">[Info] Waiting for Firebase synchronization...</div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </main>
+    </div>
+
+    <script src="https://www.gstatic.com/firebasejs/10.8.0/firebase-app-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/10.8.0/firebase-database-compat.js"></script>
+    
+    <script src="app.js"></script>
+</body>
+  </html>
+                                                                           
